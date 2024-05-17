@@ -2,8 +2,6 @@ if (process.env.NODE_ENV !== 'production') {
   require('dotenv').config();
 }
 
-
-
 // npm install cloudinary@1.41.3
 
 // npm install multer-storage-cloudinary@4.0.0
@@ -28,7 +26,11 @@ const campgroundRoutes = require('./routes/campgrounds');
 const reviewRoutes = require('./routes/reviews');
 const userRoutes = require('./routes/users');
 
-mongoose.connect('mongodb://localhost:27017/yelp-camp');
+const MongoStore = require('connect-mongo');
+
+const dbUrl = process.env.DB_URL;
+// 'mongodb://localhost:27017/yelp-camp';
+mongoose.connect(dbUrl);
 
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'Connection error:'));
@@ -47,8 +49,21 @@ app.use(methodOverride('_method'));
 
 app.use(mongoSanitize());
 
+const store = MongoStore.create({
+  mongoUrl: dbUrl,
+  touchAfter: 24 * 60 * 60,
+  crypto: {
+    secret: 'thisshouldbeabettersecret!'
+  }
+});
+
+store.on('error', function (e) {
+  console.log('Session store error', e);
+});
+
 const sessionConfig = {
-  name:'session',
+  store,
+  name: 'session',
   secret: 'thisshouldbeabettersecret!',
   resave: false,
   saveUninitialized: true,
